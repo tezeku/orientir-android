@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,7 +65,7 @@ import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
 @Composable
 fun RegisterScreen(
     onNavigateToHome: (Role) -> Unit,
-    onNavigateToLogin: () -> Unit,
+    onNavigateToLogin: (phoneNumber: String?) -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
@@ -73,7 +74,7 @@ fun RegisterScreen(
     CollectAsEffect(viewModel.events) { event ->
         when (event) {
             is RegisterUiEvent.NavigateToHome -> onNavigateToHome(event.role)
-            RegisterUiEvent.NavigateToLogin -> onNavigateToLogin()
+            is RegisterUiEvent.NavigateToLogin -> onNavigateToLogin(event.phoneNumber)
             RegisterUiEvent.NavigateBack -> onNavigateBack()
         }
     }
@@ -236,27 +237,19 @@ private fun RegisterContent(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 singleLine = true,
                 isError = state.phoneError != null || state.phoneAlreadyTaken,
-                supportingText = {
-                    when {
-                        state.phoneAlreadyTaken -> {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Такой телефон уже зарегистрирован — ")
-                                Text(
-                                    text = "Войти",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.clickable(enabled = !state.isLoading) {
-                                        onLoginClick()
-                                    }
-                                )
-                            }
-                        }
-                        state.phoneError != null -> Text(state.phoneError)
+                supportingText = when {
+                    state.phoneAlreadyTaken -> {
+                        { Text("Этот номер уже зарегистрирован") }
                     }
+                    state.phoneError != null -> {
+                        { Text(state.phoneError) }
+                    }
+                    else -> null
                 },
                 enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             )
+            Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = state.password,
@@ -317,30 +310,44 @@ private fun RegisterContent(
 
             Spacer(Modifier.height(12.dp))
 
-            Button(
-                onClick = onSubmit,
-                enabled = state.isSubmitEnabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Зарегистрироваться")
+            if (state.phoneAlreadyTaken) {
+                FilledTonalButton(
+                    onClick = onLoginClick,
+                    enabled = !state.isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text("Войти с этим номером")
                 }
-            }
+            } else {
+                Button(
+                    onClick = onSubmit,
+                    enabled = state.isSubmitEnabled,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    if (state.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Зарегистрироваться")
+                    }
+                }
 
-            TextButton(
-                onClick = onLoginClick,
-                enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Уже есть аккаунт? Войти")
+                Spacer(Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = onLoginClick,
+                    enabled = !state.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Уже есть аккаунт? Войти")
+                }
             }
 
             Spacer(Modifier.height(16.dp))

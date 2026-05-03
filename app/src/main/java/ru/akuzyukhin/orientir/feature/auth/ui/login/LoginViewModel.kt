@@ -1,5 +1,6 @@
 package ru.akuzyukhin.orientir.feature.auth.ui.login
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,9 +18,14 @@ import javax.inject.Inject
 /** ViewModel экрана логина */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(LoginUiState())
+    private val _uiState = MutableStateFlow(
+        LoginUiState(
+            phoneNumber = savedStateHandle.get<String>(NAV_ARG_PHONE).orEmpty()
+        )
+    )
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<LoginUiEvent>(Channel.BUFFERED)
@@ -80,5 +86,9 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _events.send(LoginUiEvent.NavigateToRegister)
         }
+    }
+
+    companion object {
+        const val NAV_ARG_PHONE = "phone"
     }
 }

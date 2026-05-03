@@ -47,7 +47,7 @@ data class RegisterUiState(
 sealed interface RegisterUiEvent : UiEvent {
     data class NavigateToHome(val role: Role) : RegisterUiEvent
 
-    data object NavigateToLogin : RegisterUiEvent
+    data class NavigateToLogin(val phoneNumber: String? = null) : RegisterUiEvent
 
     data object NavigateBack : RegisterUiEvent
 }

@@ -9,6 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import ru.akuzyukhin.orientir.feature.auth.domain.model.Role
+import ru.akuzyukhin.orientir.feature.auth.domain.model.Session
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -69,5 +71,20 @@ class TokenStorage @Inject constructor(
     /** Полная очистка */
     suspend fun clear() {
         context.authDataStore.edit { it.clear() }
+    }
+
+    /** Возврат текущей сессии, если в хранилище есть и access-токен, и роль */
+    suspend fun getCurrentSession(): Session? {
+        val prefs = context.authDataStore.data.first()
+        val accessToken = prefs[Keys.ACCESS_TOKEN]
+        val userId = prefs[Keys.USER_ID]
+        val roleString = prefs[Keys.ROLE]
+
+        if (accessToken.isNullOrBlank() || userId == null || roleString == null) {
+            return null
+        }
+
+        val role = Role.fromString(roleString) ?: return null
+        return Session(userId = userId, role = role)
     }
 }

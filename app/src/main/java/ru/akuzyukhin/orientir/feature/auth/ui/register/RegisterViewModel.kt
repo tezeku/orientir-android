@@ -71,7 +71,14 @@ class RegisterViewModel @Inject constructor(
     }
 
     fun onLoginClick() {
-        viewModelScope.launch { _events.send(RegisterUiEvent.NavigateToLogin) }
+        viewModelScope.launch {
+            val phoneToPass = if (_uiState.value.phoneAlreadyTaken) {
+                _uiState.value.phoneNumber.trim()
+            } else {
+                null
+            }
+            _events.send(RegisterUiEvent.NavigateToLogin(phoneToPass))
+        }
     }
 
     fun onSubmit() {
