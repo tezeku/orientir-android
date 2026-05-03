@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import ru.akuzyukhin.orientir.feature.auth.domain.repository.AuthRepository
+import ru.akuzyukhin.orientir.feature.auth.ui.login.LoginScreen
 import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
 import javax.inject.Inject
 
@@ -24,12 +25,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             OrientirTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Text(
-                        text = "Orientir",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                LoginScreen(
+                    onNavigateToHome = { role ->
+                        android.util.Log.d("MainActivity", "Login OK, role=$role")
+                    },
+                    onNavigateToRegister = {
+                        android.util.Log.d("MainActivity", "Register clicked")
+                    }
+                )
             }
         }
     }
