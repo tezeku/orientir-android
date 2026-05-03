@@ -15,6 +15,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import ru.akuzyukhin.orientir.feature.auth.domain.repository.AuthRepository
 import ru.akuzyukhin.orientir.feature.auth.ui.login.LoginScreen
+import ru.akuzyukhin.orientir.feature.auth.ui.register.RegisterScreen
 import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
 import javax.inject.Inject
 
@@ -25,12 +26,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             OrientirTheme {
-                LoginScreen(
+                RegisterScreen(
                     onNavigateToHome = { role ->
-                        android.util.Log.d("MainActivity", "Login OK, role=$role")
+                        Log.d("MainActivity", "Register OK, role=$role")
                     },
-                    onNavigateToRegister = {
-                        android.util.Log.d("MainActivity", "Register clicked")
+                    onNavigateToLogin = {
+                        Log.d("MainActivity", "Go to login")
+                    },
+                    onNavigateBack = {
+                        Log.d("MainActivity", "Back pressed")
                     }
                 )
             }
