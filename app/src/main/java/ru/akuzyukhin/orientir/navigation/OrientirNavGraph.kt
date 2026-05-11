@@ -83,7 +83,7 @@ fun OrientirNavGraph(
 
         composable(OrientirRoutes.HOME) {
             HomeScreen(
-                onNavigateToLogin = {
+                onLogout = {
                     navController.navigate(OrientirRoutes.LOGIN) {
                         popUpTo(OrientirRoutes.HOME) { inclusive = true }
                         launchSingleTop = true
