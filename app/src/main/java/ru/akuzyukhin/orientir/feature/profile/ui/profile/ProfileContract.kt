@@ -17,5 +17,7 @@ sealed interface ProfileUiEvent : UiEvent {
 
     data object NavigateToChangePassword : ProfileUiEvent
 
+    data object NavigateToConnections : ProfileUiEvent
+
     data object NavigateToLogin : ProfileUiEvent
 }

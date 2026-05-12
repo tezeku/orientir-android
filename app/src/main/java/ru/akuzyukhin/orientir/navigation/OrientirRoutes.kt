@@ -27,4 +27,8 @@ object HomeTabRoutes {
 
     const val PROFILE_EDIT = "profile_edit"
     const val CHANGE_PASSWORD = "profile_change_password"
+
+    const val CONNECTIONS = "profile_connections"
+
+    const val ADD_WARD = "profile_add_ward"
 }

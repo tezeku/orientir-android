@@ -41,6 +41,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ru.akuzyukhin.orientir.core.ui.CollectAsEffect
 import ru.akuzyukhin.orientir.feature.auth.domain.model.Role
+import ru.akuzyukhin.orientir.feature.connections.ui.add_ward.AddWardScreen
+import ru.akuzyukhin.orientir.feature.connections.ui.connections.ConnectionsScreen
 import ru.akuzyukhin.orientir.feature.profile.ui.edit.ProfileEditScreen
 import ru.akuzyukhin.orientir.feature.profile.ui.password.ChangePasswordScreen
 import ru.akuzyukhin.orientir.feature.profile.ui.profile.ProfileScreen
@@ -72,6 +74,9 @@ fun HomeScreen(
                     onNavigateToChangePassword = {
                         homeNavController.navigate(HomeTabRoutes.CHANGE_PASSWORD)
                     },
+                    onNavigateToConnections = {            // ← добавь
+                        homeNavController.navigate(HomeTabRoutes.CONNECTIONS)
+                    },
                     onNavigateToLogin = onLogout
                 )
             }
@@ -82,6 +87,21 @@ fun HomeScreen(
             }
             composable(HomeTabRoutes.CHANGE_PASSWORD) {
                 ChangePasswordScreen(
+                    onNavigateBack = { homeNavController.popBackStack() }
+                )
+            }
+
+            composable(HomeTabRoutes.CONNECTIONS) {
+                ConnectionsScreen(
+                    onNavigateBack = { homeNavController.popBackStack() },
+                    onNavigateToAddWard = {
+                        homeNavController.navigate(HomeTabRoutes.ADD_WARD)
+                    }
+                )
+            }
+
+            composable(HomeTabRoutes.ADD_WARD) {
+                AddWardScreen(
                     onNavigateBack = { homeNavController.popBackStack() }
                 )
             }

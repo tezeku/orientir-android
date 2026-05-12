@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -58,6 +59,7 @@ import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
 fun ProfileScreen(
     onNavigateToEdit: () -> Unit,
     onNavigateToChangePassword: () -> Unit,
+    onNavigateToConnections: () -> Unit,
     onNavigateToLogin: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -77,6 +79,7 @@ fun ProfileScreen(
         when (event) {
             ProfileUiEvent.NavigateToEdit -> onNavigateToEdit()
             ProfileUiEvent.NavigateToChangePassword -> onNavigateToChangePassword()
+            ProfileUiEvent.NavigateToConnections -> onNavigateToConnections()
             ProfileUiEvent.NavigateToLogin -> onNavigateToLogin()
         }
     }
@@ -85,6 +88,7 @@ fun ProfileScreen(
         state = state,
         onEditClick = viewModel::onEditClick,
         onChangePasswordClick = viewModel::onChangePasswordClick,
+        onConnectionsClick = viewModel::onConnectionsClick,
         onLogoutClick = viewModel::onLogoutClick,
         onRetry = viewModel::retry,
         onRefresh = viewModel::refresh
@@ -97,6 +101,7 @@ private fun ProfileContent(
     state: ProfileUiState,
     onEditClick: () -> Unit,
     onChangePasswordClick: () -> Unit,
+    onConnectionsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onRetry: () -> Unit,
     onRefresh: () -> Unit
@@ -159,6 +164,7 @@ private fun ProfileContent(
                         profile = state.profile,
                         isLoggingOut = state.isLoggingOut,
                         onChangePasswordClick = onChangePasswordClick,
+                        onConnectionsClick = onConnectionsClick,
                         onLogoutClick = onLogoutClick
                     )
                 }
@@ -213,6 +219,7 @@ private fun LoadedState(
     profile: Profile,
     isLoggingOut: Boolean,
     onChangePasswordClick: () -> Unit,
+    onConnectionsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     Column(
@@ -252,6 +259,27 @@ private fun LoadedState(
         }
 
         Spacer(Modifier.height(32.dp))
+
+        OutlinedButton(
+            onClick = onConnectionsClick,
+            enabled = !isLoggingOut,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.People,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = when (profile.role) {
+                    Role.CURATOR -> "Мои подопечные"
+                    Role.WARD -> "Мои кураторы"
+                }
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         OutlinedButton(
             onClick = onChangePasswordClick,
@@ -399,6 +427,7 @@ private fun ProfileContentLoadedPreview() {
                 isLoading = false
             ),
             onEditClick = {}, onChangePasswordClick = {},
+            onConnectionsClick = {},
             onLogoutClick = {}, onRetry = {}, onRefresh = {}
         )
     }
@@ -411,6 +440,7 @@ private fun ProfileContentLoadingPreview() {
         ProfileContent(
             state = ProfileUiState(isLoading = true),
             onEditClick = {}, onChangePasswordClick = {},
+            onConnectionsClick = {},
             onLogoutClick = {}, onRetry = {}, onRefresh = {}
         )
     }
@@ -426,6 +456,7 @@ private fun ProfileContentErrorPreview() {
                 errorMessage = "Нет соединения с сервером. Проверьте интернет."
             ),
             onEditClick = {}, onChangePasswordClick = {},
+            onConnectionsClick = {},
             onLogoutClick = {}, onRetry = {}, onRefresh = {}
         )
     }
@@ -451,6 +482,7 @@ private fun ProfileContentWardPreview() {
                 isLoading = false
             ),
             onEditClick = {}, onChangePasswordClick = {},
+            onConnectionsClick = {},
             onLogoutClick = {}, onRetry = {}, onRefresh = {}
         )
     }

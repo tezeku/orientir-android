@@ -103,4 +103,8 @@ class ProfileViewModel @Inject constructor(
                 }
         }
     }
+
+    fun onConnectionsClick() {
+        viewModelScope.launch { _events.send(ProfileUiEvent.NavigateToConnections) }
+    }
 }
