@@ -87,4 +87,7 @@ class TokenStorage @Inject constructor(
         val role = Role.fromString(roleString) ?: return null
         return Session(userId = userId, role = role)
     }
+
+    /** Поток с текущей ролью как enum. null, если не залогинен или роль битая */
+    val roleEnumFlow: Flow<Role?> = roleFlow.map { it?.let { Role.fromString(it) } }
 }

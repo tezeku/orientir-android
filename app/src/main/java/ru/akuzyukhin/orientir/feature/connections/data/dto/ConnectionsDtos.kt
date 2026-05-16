@@ -34,6 +34,6 @@ data class CuratorSummaryDto(
 /** Тело запроса на привязку подопечного по номеру телефона */
 @Serializable
 data class AddWardRequestDto(
-    @SerialName("ward_phone_number")
+    @SerialName("phone_number")
     val wardPhoneNumber: String
 )
