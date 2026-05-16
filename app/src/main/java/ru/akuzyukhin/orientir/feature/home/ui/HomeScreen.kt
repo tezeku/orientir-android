@@ -1,9 +1,12 @@
 package ru.akuzyukhin.orientir.feature.home.ui
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +25,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults.contentWindowInsets
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,19 +39,29 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import ru.akuzyukhin.orientir.core.ui.CollectAsEffect
 import ru.akuzyukhin.orientir.feature.auth.domain.model.Role
 import ru.akuzyukhin.orientir.feature.connections.ui.add_ward.AddWardScreen
 import ru.akuzyukhin.orientir.feature.connections.ui.connections.ConnectionsScreen
+import ru.akuzyukhin.orientir.feature.notification.ui.list.NotificationsScreen
 import ru.akuzyukhin.orientir.feature.profile.ui.edit.ProfileEditScreen
 import ru.akuzyukhin.orientir.feature.profile.ui.password.ChangePasswordScreen
 import ru.akuzyukhin.orientir.feature.profile.ui.profile.ProfileScreen
+import ru.akuzyukhin.orientir.feature.schedule.ui.detail.ScheduleDetailScreen
+import ru.akuzyukhin.orientir.feature.schedule.ui.list.SchedulesListScreen
+import ru.akuzyukhin.orientir.feature.task.ui.daily.ScheduleTabRouterScreen
+import ru.akuzyukhin.orientir.feature.task.ui.daily.curator.CuratorWardDailyScreen
+import ru.akuzyukhin.orientir.feature.task.ui.editor.TaskEditorScreen
+import ru.akuzyukhin.orientir.feature.task.ui.statistics.StatisticsScreen
 import ru.akuzyukhin.orientir.navigation.HomeTabRoutes
 import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeScreen(
     onLogout: () -> Unit
@@ -55,9 +69,9 @@ fun HomeScreen(
     val homeNavController = rememberNavController()
 
     Scaffold(
-        bottomBar = {
-            HomeBottomBar(navController = homeNavController)
-        }
+        bottomBar = { HomeBottomBar(navController = homeNavController) },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+
     ) { padding ->
         NavHost(
             navController = homeNavController,
@@ -74,7 +88,7 @@ fun HomeScreen(
                     onNavigateToChangePassword = {
                         homeNavController.navigate(HomeTabRoutes.CHANGE_PASSWORD)
                     },
-                    onNavigateToConnections = {            // ← добавь
+                    onNavigateToConnections = {
                         homeNavController.navigate(HomeTabRoutes.CONNECTIONS)
                     },
                     onNavigateToLogin = onLogout
@@ -96,7 +110,73 @@ fun HomeScreen(
                     onNavigateBack = { homeNavController.popBackStack() },
                     onNavigateToAddWard = {
                         homeNavController.navigate(HomeTabRoutes.ADD_WARD)
+                    },
+                    onNavigateToWardSchedules = { wardId ->
+                        homeNavController.navigate(HomeTabRoutes.wardSchedules(wardId))
                     }
+                )
+            }
+
+            composable(
+                route = HomeTabRoutes.WARD_SCHEDULES_ROUTE,
+                arguments = listOf(
+                    navArgument(HomeTabRoutes.WARD_ID_ARG) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val wardId = backStackEntry.arguments?.getLong(HomeTabRoutes.WARD_ID_ARG) ?: return@composable
+                SchedulesListScreen(
+                    onNavigateBack = { homeNavController.popBackStack() },
+                    onNavigateToScheduleDetail = { scheduleId ->
+                        homeNavController.navigate(HomeTabRoutes.scheduleDetail(wardId, scheduleId))
+                    },
+                    onNavigateToDaily = {
+                        homeNavController.navigate(HomeTabRoutes.wardDaily(wardId))
+                    }
+                )
+            }
+
+            composable(
+                route = HomeTabRoutes.WARD_DAILY_ROUTE,
+                arguments = listOf(
+                    navArgument(HomeTabRoutes.WARD_ID_ARG) { type = NavType.LongType }
+                )
+            ) {
+                CuratorWardDailyScreen(
+                    onNavigateBack = { homeNavController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = HomeTabRoutes.SCHEDULE_DETAIL_ROUTE,
+                arguments = listOf(
+                    navArgument(HomeTabRoutes.WARD_ID_ARG) { type = NavType.LongType },
+                    navArgument(HomeTabRoutes.SCHEDULE_ID_ARG) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val wardId = backStackEntry.arguments?.getLong(HomeTabRoutes.WARD_ID_ARG) ?: return@composable
+                val scheduleId = backStackEntry.arguments?.getLong(HomeTabRoutes.SCHEDULE_ID_ARG) ?: return@composable
+
+                ScheduleDetailScreen(
+                    onNavigateBack = { homeNavController.popBackStack() },
+                    onNavigateToCreateTask = {
+                        homeNavController.navigate(HomeTabRoutes.taskEditorCreate(wardId, scheduleId))
+                    },
+                    onNavigateToEditTask = { taskId ->
+                        homeNavController.navigate(HomeTabRoutes.taskEditorEdit(wardId, scheduleId, taskId))
+                    }
+                )
+            }
+
+            composable(
+                route = HomeTabRoutes.TASK_EDITOR_ROUTE,
+                arguments = listOf(
+                    navArgument(HomeTabRoutes.WARD_ID_ARG) { type = NavType.LongType },
+                    navArgument(HomeTabRoutes.SCHEDULE_ID_ARG) { type = NavType.LongType },
+                    navArgument(HomeTabRoutes.TASK_ID_ARG) { type = NavType.LongType }
+                )
+            ) {
+                TaskEditorScreen(
+                    onNavigateBack = { homeNavController.popBackStack() }
                 )
             }
 
@@ -107,13 +187,13 @@ fun HomeScreen(
             }
 
             composable(HomeTabRoutes.SCHEDULE) {
-                ComingSoonScreen(title = "Расписание")
+                ScheduleTabRouterScreen()
             }
             composable(HomeTabRoutes.NOTIFICATIONS) {
-                ComingSoonScreen(title = "Уведомления")
+                NotificationsScreen()
             }
             composable(HomeTabRoutes.STATISTICS) {
-                ComingSoonScreen(title = "Статистика")
+                StatisticsScreen()
             }
         }
     }
@@ -138,9 +218,7 @@ private fun HomeBottomBar(
             val selected = when (tab.route) {
                 HomeTabRoutes.PROFILE -> {
                     currentDestination?.hierarchy?.any {
-                        it.route == HomeTabRoutes.PROFILE ||
-                                it.route == HomeTabRoutes.PROFILE_EDIT ||
-                                it.route == HomeTabRoutes.CHANGE_PASSWORD
+                        it.route in HomeTabRoutes.PROFILE_TAB_ROUTES
                     } == true
                 }
                 else -> {

@@ -31,4 +31,43 @@ object HomeTabRoutes {
     const val CONNECTIONS = "profile_connections"
 
     const val ADD_WARD = "profile_add_ward"
+
+    const val WARD_SCHEDULES = "profile_ward_schedules"
+
+    const val WARD_ID_ARG = "wardId"
+
+    const val WARD_SCHEDULES_ROUTE = "$WARD_SCHEDULES/{$WARD_ID_ARG}"
+
+    fun wardSchedules(wardId: Long) = "$WARD_SCHEDULES/$wardId"
+
+    const val SCHEDULE_DETAIL = "profile_schedule_detail"
+    const val SCHEDULE_ID_ARG = "scheduleId"
+    const val SCHEDULE_DETAIL_ROUTE = "$SCHEDULE_DETAIL/{$WARD_ID_ARG}/{$SCHEDULE_ID_ARG}"
+    fun scheduleDetail(wardId: Long, scheduleId: Long) =
+        "$SCHEDULE_DETAIL/$wardId/$scheduleId"
+
+    const val TASK_EDITOR = "profile_task_editor"
+    const val TASK_ID_ARG = "taskId"
+    const val TASK_EDITOR_ROUTE = "$TASK_EDITOR/{$WARD_ID_ARG}/{$SCHEDULE_ID_ARG}/{$TASK_ID_ARG}"
+    fun taskEditorCreate(wardId: Long, scheduleId: Long) =
+        "$TASK_EDITOR/$wardId/$scheduleId/-1"
+    fun taskEditorEdit(wardId: Long, scheduleId: Long, taskId: Long) =
+        "$TASK_EDITOR/$wardId/$scheduleId/$taskId"
+
+    const val WARD_DAILY = "profile_ward_daily"
+    const val WARD_DAILY_ROUTE = "$WARD_DAILY/{$WARD_ID_ARG}"
+    fun wardDaily(wardId: Long) = "$WARD_DAILY/$wardId"
+
+    /** Все маршруты, относящиеся к табу «Профиль». Для подсветки таба*/
+    val PROFILE_TAB_ROUTES: Set<String> = setOf(
+        PROFILE,
+        PROFILE_EDIT,
+        CHANGE_PASSWORD,
+        CONNECTIONS,
+        ADD_WARD,
+        WARD_SCHEDULES_ROUTE,
+        SCHEDULE_DETAIL_ROUTE,
+        TASK_EDITOR_ROUTE,
+        WARD_DAILY_ROUTE
+    )
 }
