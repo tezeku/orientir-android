@@ -2,6 +2,7 @@ package ru.akuzyukhin.orientir
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
+import ru.akuzyukhin.orientir.core.notification.NotificationChannels
 
 /**
  * Корневой класс приложения.
@@ -10,6 +11,7 @@ import dagger.hilt.android.HiltAndroidApp
 class OrientirApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        NotificationChannels.createAll(this)
         android.util.Log.d("OrientirApp", "Application created, Hilt initialized")
     }
 }

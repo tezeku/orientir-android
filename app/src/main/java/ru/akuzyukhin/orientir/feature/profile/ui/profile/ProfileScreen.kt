@@ -1,5 +1,7 @@
 package ru.akuzyukhin.orientir.feature.profile.ui.profile
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,11 +52,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import ru.akuzyukhin.orientir.BuildConfig
 import ru.akuzyukhin.orientir.core.ui.CollectAsEffect
 import ru.akuzyukhin.orientir.feature.auth.domain.model.Role
 import ru.akuzyukhin.orientir.feature.profile.domain.model.Profile
+import ru.akuzyukhin.orientir.feature.reminder.ui.debug.DebugReminderSection
 import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ProfileScreen(
     onNavigateToEdit: () -> Unit,
@@ -95,6 +100,7 @@ fun ProfileScreen(
     )
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileContent(
@@ -214,6 +220,7 @@ private fun ErrorState(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun LoadedState(
     profile: Profile,
@@ -323,6 +330,10 @@ private fun LoadedState(
         }
 
         Spacer(Modifier.height(16.dp))
+
+        if (BuildConfig.DEBUG) {
+            DebugReminderSection()
+        }
     }
 }
 
@@ -407,6 +418,7 @@ private fun roleDisplayName(role: Role): String = when (role) {
     Role.WARD -> "Подопечный"
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 private fun ProfileContentLoadedPreview() {
@@ -433,6 +445,7 @@ private fun ProfileContentLoadedPreview() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, name = "Loading")
 @Composable
 private fun ProfileContentLoadingPreview() {
@@ -446,6 +459,7 @@ private fun ProfileContentLoadingPreview() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, name = "Error")
 @Composable
 private fun ProfileContentErrorPreview() {
@@ -462,6 +476,7 @@ private fun ProfileContentErrorPreview() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, name = "Ward")
 @Composable
 private fun ProfileContentWardPreview() {

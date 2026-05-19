@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,17 +43,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import ru.akuzyukhin.orientir.feature.auth.domain.model.Role
+import ru.akuzyukhin.orientir.feature.statistics.ui.curator_list.CuratorStatisticsListContent
 import ru.akuzyukhin.orientir.feature.task.domain.model.ExecutionStatus
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun StatisticsScreen() {
+fun StatisticsScreen(
+    onNavigateToWardStatistics: (Long) -> Unit
+) {
     val viewModel: StatisticsViewModel = hiltViewModel()
     val role by viewModel.role.collectAsState()
 
     when (role) {
         Role.WARD -> WardStatistics(viewModel)
-        Role.CURATOR -> CuratorEmpty()
+        Role.CURATOR -> CuratorStatisticsListContent(onWardClick = onNavigateToWardStatistics)
         null -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
     }
 }
@@ -231,30 +233,6 @@ private fun EmptyStatistics() {
         Text(
             "За этот период данных пока нет",
             style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun CuratorEmpty() {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            Icons.Default.People, null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(64.dp)
-        )
-        Spacer(Modifier.height(16.dp))
-        Text("Статистика подопечных", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Откройте конкретного подопечного через раздел «Мои подопечные» в Профиле — статистика по нему появится в одном из следующих обновлений.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }

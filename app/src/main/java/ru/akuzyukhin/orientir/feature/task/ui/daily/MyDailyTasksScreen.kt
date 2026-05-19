@@ -1,7 +1,6 @@
 package ru.akuzyukhin.orientir.feature.task.ui.daily
 
 import android.os.Build
-import android.view.Surface
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,6 +55,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ru.akuzyukhin.orientir.core.notification.ui.NotificationPermissionBanner
+import ru.akuzyukhin.orientir.feature.reminder.domain.model.ReminderInfo
 import ru.akuzyukhin.orientir.feature.task.domain.model.DailyTask
 import ru.akuzyukhin.orientir.feature.task.domain.model.ExecutionStatus
 import ru.akuzyukhin.orientir.feature.task.domain.model.Importance
@@ -91,6 +92,8 @@ fun MyDailyTasksScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            NotificationPermissionBanner()
+
             DateSelector(
                 date = state.date,
                 onPrev = viewModel::onPreviousDay,

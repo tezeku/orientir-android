@@ -24,4 +24,6 @@ data class SchedulesListUiState(
 
 sealed interface SchedulesListUiEvent : UiEvent {
     data class NavigateToScheduleDetail(val scheduleId: Long) : SchedulesListUiEvent
+    data class NavigateToStatistics(val wardId: Long) : SchedulesListUiEvent
+    data class NavigateToThresholds(val wardId: Long) : SchedulesListUiEvent
 }

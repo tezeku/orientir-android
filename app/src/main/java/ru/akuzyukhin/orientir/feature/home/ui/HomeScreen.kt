@@ -55,6 +55,8 @@ import ru.akuzyukhin.orientir.feature.profile.ui.password.ChangePasswordScreen
 import ru.akuzyukhin.orientir.feature.profile.ui.profile.ProfileScreen
 import ru.akuzyukhin.orientir.feature.schedule.ui.detail.ScheduleDetailScreen
 import ru.akuzyukhin.orientir.feature.schedule.ui.list.SchedulesListScreen
+import ru.akuzyukhin.orientir.feature.statistics.ui.statistics.WardStatisticsScreen
+import ru.akuzyukhin.orientir.feature.statistics.ui.thresholds.WardThresholdsScreen
 import ru.akuzyukhin.orientir.feature.task.ui.daily.ScheduleTabRouterScreen
 import ru.akuzyukhin.orientir.feature.task.ui.daily.curator.CuratorWardDailyScreen
 import ru.akuzyukhin.orientir.feature.task.ui.editor.TaskEditorScreen
@@ -131,6 +133,12 @@ fun HomeScreen(
                     },
                     onNavigateToDaily = {
                         homeNavController.navigate(HomeTabRoutes.wardDaily(wardId))
+                    },
+                    onNavigateToStatistics = { id ->
+                        homeNavController.navigate(HomeTabRoutes.wardStatistics(id))
+                    },
+                    onNavigateToThresholds = { id ->
+                        homeNavController.navigate(HomeTabRoutes.wardThresholds(id))
                     }
                 )
             }
@@ -142,6 +150,32 @@ fun HomeScreen(
                 )
             ) {
                 CuratorWardDailyScreen(
+                    onNavigateBack = { homeNavController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = HomeTabRoutes.WARD_STATISTICS_ROUTE,
+                arguments = listOf(
+                    navArgument(HomeTabRoutes.WARD_ID_ARG) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val wardId = backStackEntry.arguments?.getLong(HomeTabRoutes.WARD_ID_ARG) ?: return@composable
+                WardStatisticsScreen(
+                    onNavigateBack = { homeNavController.popBackStack() },
+                    onNavigateToThresholds = {
+                        homeNavController.navigate(HomeTabRoutes.wardThresholds(wardId))
+                    }
+                )
+            }
+
+            composable(
+                route = HomeTabRoutes.WARD_THRESHOLDS_ROUTE,
+                arguments = listOf(
+                    navArgument(HomeTabRoutes.WARD_ID_ARG) { type = NavType.LongType }
+                )
+            ) {
+                WardThresholdsScreen(
                     onNavigateBack = { homeNavController.popBackStack() }
                 )
             }
@@ -187,13 +221,21 @@ fun HomeScreen(
             }
 
             composable(HomeTabRoutes.SCHEDULE) {
-                ScheduleTabRouterScreen()
+                ScheduleTabRouterScreen(
+                    onNavigateToWardSchedules = { wardId ->
+                        homeNavController.navigate(HomeTabRoutes.wardSchedules(wardId))
+                    }
+                )
             }
             composable(HomeTabRoutes.NOTIFICATIONS) {
                 NotificationsScreen()
             }
             composable(HomeTabRoutes.STATISTICS) {
-                StatisticsScreen()
+                StatisticsScreen(
+                    onNavigateToWardStatistics = { wardId ->
+                        homeNavController.navigate(HomeTabRoutes.wardStatistics(wardId))
+                    }
+                )
             }
         }
     }
@@ -205,6 +247,7 @@ private fun HomeBottomBar(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val currentRoute = currentDestination?.route
 
     val tabs = listOf(
         BottomTab(HomeTabRoutes.SCHEDULE, "Расписание", Icons.Default.CalendarMonth),
@@ -215,19 +258,15 @@ private fun HomeBottomBar(
 
     NavigationBar {
         tabs.forEach { tab ->
-            val selected = when (tab.route) {
-                HomeTabRoutes.PROFILE -> {
-                    currentDestination?.hierarchy?.any {
-                        it.route in HomeTabRoutes.PROFILE_TAB_ROUTES
-                    } == true
-                }
-                else -> {
-                    currentDestination?.hierarchy?.any { it.route == tab.route } == true
-                }
+            val isActive = when (tab.route) {
+                HomeTabRoutes.PROFILE -> currentRoute in HomeTabRoutes.PROFILE_TAB_ROUTES
+                HomeTabRoutes.SCHEDULE -> currentRoute in HomeTabRoutes.SCHEDULE_TAB_ROUTES
+                HomeTabRoutes.STATISTICS -> currentRoute in HomeTabRoutes.STATISTICS_TAB_ROUTES
+                else -> currentRoute == tab.route
             }
 
             NavigationBarItem(
-                selected = selected,
+                selected = isActive,
                 onClick = {
                     navController.navigate(tab.route) {
                         popUpTo(navController.graph.startDestinationId) {

@@ -17,10 +17,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -52,6 +54,8 @@ fun SchedulesListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToScheduleDetail: (Long) -> Unit,
     onNavigateToDaily: () -> Unit,
+    onNavigateToStatistics: (Long) -> Unit,
+    onNavigateToThresholds: (Long) -> Unit,
     viewModel: SchedulesListViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +64,10 @@ fun SchedulesListScreen(
         when (event) {
             is SchedulesListUiEvent.NavigateToScheduleDetail ->
                 onNavigateToScheduleDetail(event.scheduleId)
+            is SchedulesListUiEvent.NavigateToStatistics ->
+                onNavigateToStatistics(event.wardId)
+            is SchedulesListUiEvent.NavigateToThresholds ->
+                onNavigateToThresholds(event.wardId)
         }
     }
 
@@ -77,7 +85,9 @@ fun SchedulesListScreen(
         onDialogDismiss = viewModel::onDialogDismiss,
         onDeleteConfirm = viewModel::onDeleteConfirm,
         onDeleteCancel = viewModel::onDeleteCancel,
-        onNavigateToDaily = onNavigateToDaily
+        onNavigateToDaily = onNavigateToDaily,
+        onNavigateToStatistics = viewModel::onStatisticsClick,
+        onNavigateToThresholds = viewModel::onThresholdsClick
     )
 }
 
@@ -97,7 +107,9 @@ private fun SchedulesListContent(
     onDialogDismiss: () -> Unit,
     onDeleteConfirm: () -> Unit,
     onDeleteCancel: () -> Unit,
-    onNavigateToDaily: () -> Unit
+    onNavigateToDaily: () -> Unit,
+    onNavigateToStatistics: () -> Unit,
+    onNavigateToThresholds: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -112,6 +124,12 @@ private fun SchedulesListContent(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToStatistics) {
+                        Icon(Icons.Default.BarChart, contentDescription = "Статистика")
+                    }
+                    IconButton(onClick = onNavigateToThresholds) {
+                        Icon(Icons.Default.Tune, contentDescription = "Пороги уведомлений")
+                    }
                     IconButton(onClick = onNavigateToDaily) {
                         Icon(Icons.Default.Today, contentDescription = "Просмотр дня")
                     }

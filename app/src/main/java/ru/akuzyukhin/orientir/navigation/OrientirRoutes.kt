@@ -58,16 +58,33 @@ object HomeTabRoutes {
     const val WARD_DAILY_ROUTE = "$WARD_DAILY/{$WARD_ID_ARG}"
     fun wardDaily(wardId: Long) = "$WARD_DAILY/$wardId"
 
-    /** Все маршруты, относящиеся к табу «Профиль». Для подсветки таба*/
+    const val WARD_STATISTICS = "ward_statistics"
+    const val WARD_STATISTICS_ROUTE = "$WARD_STATISTICS/{$WARD_ID_ARG}"
+    fun wardStatistics(wardId: Long) = "$WARD_STATISTICS/$wardId"
+
+    const val WARD_THRESHOLDS = "ward_thresholds"
+    const val WARD_THRESHOLDS_ROUTE = "$WARD_THRESHOLDS/{$WARD_ID_ARG}"
+    fun wardThresholds(wardId: Long) = "$WARD_THRESHOLDS/$wardId"
+
     val PROFILE_TAB_ROUTES: Set<String> = setOf(
         PROFILE,
         PROFILE_EDIT,
         CHANGE_PASSWORD,
         CONNECTIONS,
-        ADD_WARD,
+        ADD_WARD
+    )
+
+    val SCHEDULE_TAB_ROUTES: Set<String> = setOf(
+        SCHEDULE,
         WARD_SCHEDULES_ROUTE,
         SCHEDULE_DETAIL_ROUTE,
         TASK_EDITOR_ROUTE,
         WARD_DAILY_ROUTE
+    )
+
+    val STATISTICS_TAB_ROUTES: Set<String> = setOf(
+        STATISTICS,
+        WARD_STATISTICS_ROUTE,
+        WARD_THRESHOLDS_ROUTE
     )
 }

@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.akuzyukhin.orientir.core.data.storage.TokenStorage
@@ -22,6 +21,10 @@ import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.stateIn
 import ru.akuzyukhin.orientir.feature.auth.domain.model.Role
+import ru.akuzyukhin.orientir.feature.reminder.domain.model.ReminderInfo
+import ru.akuzyukhin.orientir.feature.reminder.domain.repository.ReminderRepository
+import ru.akuzyukhin.orientir.feature.task.domain.model.ExecutionStatus
+import java.time.ZoneId
 
 private const val REFRESH_MIN_DURATION_MS = 500L
 
@@ -30,13 +33,13 @@ private const val REFRESH_MIN_DURATION_MS = 500L
 class MyDailyTasksViewModel @Inject constructor(
     private val tasksRepository: TasksRepository,
     private val monitoringRepository: MonitoringRepository,
+    private val reminderRepository: ReminderRepository,
     tokenStorage: TokenStorage
 ) : ViewModel() {
 
     val role: StateFlow<Role?> = tokenStorage.roleEnumFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private val _uiState = MutableStateFlow(MyDailyTasksUiState())
     val uiState: StateFlow<MyDailyTasksUiState> = _uiState.asStateFlow()
 
@@ -50,6 +53,7 @@ class MyDailyTasksViewModel @Inject constructor(
             tasksRepository.getMyDailyTasks(date)
                 .onSuccess { tasks ->
                     _uiState.update { it.copy(isLoading = false, tasks = tasks) }
+                    syncRemindersForToday(date, tasks)
                 }
                 .onFailure { error ->
                     _uiState.update {
@@ -67,7 +71,10 @@ class MyDailyTasksViewModel @Inject constructor(
             val elapsed = System.currentTimeMillis() - startTime
             if (elapsed < REFRESH_MIN_DURATION_MS) delay(REFRESH_MIN_DURATION_MS - elapsed)
             result
-                .onSuccess { tasks -> _uiState.update { it.copy(isRefreshing = false, tasks = tasks) } }
+                .onSuccess { tasks ->
+                    _uiState.update { it.copy(isRefreshing = false, tasks = tasks) }
+                    syncRemindersForToday(_uiState.value.date, tasks)
+                }
                 .onFailure { error ->
                     _uiState.update {
                         it.copy(isRefreshing = false, errorMessage = error.toUserMessage())
@@ -149,6 +156,7 @@ class MyDailyTasksViewModel @Inject constructor(
                             }
                         )
                     }
+                    cancelReminder(execution.id)
                 }
                 .onFailure { error ->
                     _uiState.update {
@@ -156,5 +164,30 @@ class MyDailyTasksViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    private fun syncRemindersForToday(date: LocalDate, tasks: List<DailyTask>) {
+        if (date != LocalDate.now()) return
+        viewModelScope.launch {
+            val reminders = tasks.mapNotNull { it.toReminderInfoOrNull() }
+            reminderRepository.sync(reminders)
+        }
+    }
+
+    private fun cancelReminder(taskExecutionId: Long) {
+        viewModelScope.launch {
+            reminderRepository.cancel(taskExecutionId)
+        }
+    }
+
+    private fun DailyTask.toReminderInfoOrNull(): ReminderInfo? {
+        if (status != ExecutionStatus.PENDING) return null
+        return ReminderInfo(
+            taskExecutionId = taskExecutionId,
+            taskName = taskName,
+            importance = importance,
+            scheduledAt = scheduledDateTime.atZone(ZoneId.systemDefault()).toInstant(),
+            windowMinutes = windowMinutes
+        )
     }
 }

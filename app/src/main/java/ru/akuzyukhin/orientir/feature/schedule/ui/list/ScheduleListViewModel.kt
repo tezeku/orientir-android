@@ -178,6 +178,14 @@ class SchedulesListViewModel @Inject constructor(
         _uiState.update { it.copy(scheduleToDelete = null) }
     }
 
+    fun onStatisticsClick() {
+        viewModelScope.launch { _events.send(SchedulesListUiEvent.NavigateToStatistics(wardId)) }
+    }
+
+    fun onThresholdsClick() {
+        viewModelScope.launch { _events.send(SchedulesListUiEvent.NavigateToThresholds(wardId)) }
+    }
+
     fun onDeleteConfirm() {
         val schedule = _uiState.value.scheduleToDelete ?: return
 
