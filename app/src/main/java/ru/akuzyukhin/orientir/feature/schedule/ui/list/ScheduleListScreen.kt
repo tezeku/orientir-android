@@ -1,11 +1,14 @@
 package ru.akuzyukhin.orientir.feature.schedule.ui.list
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,30 +19,41 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -48,7 +62,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.akuzyukhin.orientir.core.ui.CollectAsEffect
 import ru.akuzyukhin.orientir.feature.schedule.domain.model.Schedule
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SchedulesListScreen(
     onNavigateBack: () -> Unit,
@@ -59,6 +77,15 @@ fun SchedulesListScreen(
     viewModel: SchedulesListViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner.lifecycle) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            if (!viewModel.uiState.value.isLoading) {
+                viewModel.refresh()
+            }
+        }
+    }
 
     CollectAsEffect(viewModel.events) { event ->
         when (event) {
@@ -87,10 +114,12 @@ fun SchedulesListScreen(
         onDeleteCancel = viewModel::onDeleteCancel,
         onNavigateToDaily = onNavigateToDaily,
         onNavigateToStatistics = viewModel::onStatisticsClick,
-        onNavigateToThresholds = viewModel::onThresholdsClick
+        onNavigateToThresholds = viewModel::onThresholdsClick,
+        onSearchChange = viewModel::onSearchChange
     )
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SchedulesListContent(
@@ -109,12 +138,13 @@ private fun SchedulesListContent(
     onDeleteCancel: () -> Unit,
     onNavigateToDaily: () -> Unit,
     onNavigateToStatistics: () -> Unit,
-    onNavigateToThresholds: () -> Unit
+    onNavigateToThresholds: () -> Unit,
+    onSearchChange: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Расписания подопечного") },
+                title = { Text("Расписания") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -129,9 +159,6 @@ private fun SchedulesListContent(
                     }
                     IconButton(onClick = onNavigateToThresholds) {
                         Icon(Icons.Default.Tune, contentDescription = "Пороги уведомлений")
-                    }
-                    IconButton(onClick = onNavigateToDaily) {
-                        Icon(Icons.Default.Today, contentDescription = "Просмотр дня")
                     }
                 }
             )
@@ -155,7 +182,9 @@ private fun SchedulesListContent(
                 onScheduleClick = onScheduleClick,
                 onEditClick = onEditClick,
                 onDeleteClick = onDeleteClick,
-                onRefresh = onRefresh
+                onRefresh = onRefresh,
+                onNavigateToDaily = onNavigateToDaily,
+                onSearchChange = onSearchChange
             )
         }
     }
@@ -239,6 +268,7 @@ private fun EmptyState(padding: PaddingValues) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ListState(
@@ -247,26 +277,138 @@ private fun ListState(
     onScheduleClick: (Schedule) -> Unit,
     onEditClick: (Schedule) -> Unit,
     onDeleteClick: (Schedule) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onNavigateToDaily: () -> Unit,
+    onSearchChange: (String) -> Unit
 ) {
-    PullToRefreshBox(
-        isRefreshing = state.isRefreshing,
-        onRefresh = onRefresh,
-        modifier = Modifier.fillMaxSize().padding(padding)
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+    val filteredSchedules = remember(state.schedules, state.searchQuery) {
+        if (state.searchQuery.isBlank()) state.schedules
+        else state.schedules.filter {
+            it.name.contains(state.searchQuery, ignoreCase = true)
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Spacer(Modifier.height(12.dp))
+        ScheduleSearchField(
+            query = state.searchQuery,
+            onQueryChange = onSearchChange
+        )
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
         ) {
-            items(state.schedules, key = { it.id }) { schedule ->
-                ScheduleCard(
-                    schedule = schedule,
-                    onClick = { onScheduleClick(schedule) },
-                    onEdit = { onEditClick(schedule) },
-                    onDelete = { onDeleteClick(schedule) }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item(key = "today_banner") {
+                    TodayBannerCard(onClick = onNavigateToDaily)
+                }
+                if (filteredSchedules.isEmpty()) {
+                    item(key = "search_empty") {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Ничего не найдено",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    items(filteredSchedules, key = { it.id }) { schedule ->
+                        ScheduleCard(
+                            schedule = schedule,
+                            onClick = { onScheduleClick(schedule) },
+                            onEdit = { onEditClick(schedule) },
+                            onDelete = { onDeleteClick(schedule) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScheduleSearchField(query: String, onQueryChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text("Поиск расписаний") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = "Очистить")
+                }
+            }
+        } else null,
+        singleLine = true,
+        shape = RoundedCornerShape(28.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    )
+    Spacer(Modifier.height(12.dp))
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun TodayBannerCard(onClick: () -> Unit) {
+    val dateText = remember {
+        LocalDate.now().format(
+            DateTimeFormatter.ofPattern("d MMMM, EEEE", Locale("ru", "RU"))
+        )
+    }
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Today,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "СЕГОДНЯ",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = dateText,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null
+            )
         }
     }
 }

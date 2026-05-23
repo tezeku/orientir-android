@@ -114,7 +114,11 @@ private fun WardStatisticsCard(item: WardStatisticsItem, onClick: (Long) -> Unit
 
     ElevatedCard(
         onClick = { onClick(item.wardId) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

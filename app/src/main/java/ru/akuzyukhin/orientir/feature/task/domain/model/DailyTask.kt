@@ -15,5 +15,6 @@ data class DailyTask(
     val status: ExecutionStatus,
     val executionTime: LocalDateTime?,
     val deviationMinutes: Int?,
-    val isWithinWindow: Boolean?
+    val isWithinWindow: Boolean?,
+    val rrule: String = ""
 )

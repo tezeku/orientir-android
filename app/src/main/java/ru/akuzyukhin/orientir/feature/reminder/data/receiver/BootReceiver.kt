@@ -20,11 +20,8 @@ class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) {
-            android.util.Log.d(TAG, "onReceive: ignored action ${intent.action}")
             return
         }
-
-        android.util.Log.d(TAG, "onReceive: BOOT_COMPLETED, restoring reminders")
 
         val pendingResult = goAsync()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -32,7 +29,6 @@ class BootReceiver : BroadcastReceiver() {
         scope.launch {
             try {
                 reminderRepository.restoreFromStorage()
-                android.util.Log.d(TAG, "onReceive: restoration completed")
             } catch (e: Exception) {
                 android.util.Log.e(TAG, "onReceive: restoration failed", e)
             } finally {

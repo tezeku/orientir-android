@@ -20,20 +20,31 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +59,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -105,7 +117,48 @@ fun MyDailyTasksScreen(
                 state.errorMessage != null && state.tasks.isEmpty() ->
                     ErrorState(state.errorMessage!!, viewModel::retry)
                 state.tasks.isEmpty() -> EmptyState()
-                else -> ListState(state, viewModel)
+                else -> {
+                    Spacer(Modifier.height(12.dp))
+                    TaskSearchField(
+                        query = state.searchQuery,
+                        onQueryChange = viewModel::onSearchChange
+                    )
+                    StatusFilterChips(
+                        selected = state.statusFilter,
+                        onSelect = viewModel::onFilterChange
+                    )
+                    val filteredTasks = remember(state.tasks, state.statusFilter, state.searchQuery) {
+                        state.tasks
+                            .let { tasks ->
+                                when (state.statusFilter) {
+                                    TaskStatusFilter.ALL -> tasks
+                                    TaskStatusFilter.ACTIVE -> tasks.filter {
+                                        it.status == ExecutionStatus.PENDING
+                                    }
+                                    TaskStatusFilter.COMPLETED -> tasks.filter {
+                                        it.status == ExecutionStatus.COMPLETED ||
+                                                it.status == ExecutionStatus.COMPLETED_LATE
+                                    }
+                                    TaskStatusFilter.MISSED -> tasks.filter {
+                                        it.status == ExecutionStatus.SKIPPED ||
+                                                it.status == ExecutionStatus.OVERDUE ||
+                                                it.status == ExecutionStatus.BLOCKED
+                                    }
+                                }
+                            }
+                            .let { tasks ->
+                                if (state.searchQuery.isBlank()) tasks
+                                else tasks.filter {
+                                    it.taskName.contains(state.searchQuery, ignoreCase = true)
+                                }
+                            }
+                    }
+                    if (filteredTasks.isEmpty()) {
+                        FilteredEmptyState()
+                    } else {
+                        ListState(state, filteredTasks, viewModel)
+                    }
+                }
             }
         }
     }
@@ -197,10 +250,92 @@ private fun EmptyState() {
     }
 }
 
+@Composable
+private fun FilteredEmptyState() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "Нет задач с таким статусом",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun TaskSearchField(query: String, onQueryChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text("Поиск задач") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = if (query.isNotEmpty()) {
+            {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = "Очистить")
+                }
+            }
+        } else null,
+        singleLine = true,
+        shape = RoundedCornerShape(28.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    )
+    Spacer(Modifier.height(12.dp))
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StatusFilterChips(selected: TaskStatusFilter, onSelect: (TaskStatusFilter) -> Unit) {
+    Row(
+        modifier = Modifier
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TaskStatusFilter.entries.forEach { filter ->
+            FilterChip(
+                selected = selected == filter,
+                onClick = { onSelect(filter) },
+                label = { Text(filter.label) },
+                leadingIcon = if (selected == filter) {
+                    {
+                        Icon(
+                            imageVector = when (filter) {
+                                TaskStatusFilter.ALL -> Icons.Default.FilterList
+                                TaskStatusFilter.ACTIVE -> Icons.Default.Schedule
+                                TaskStatusFilter.COMPLETED -> Icons.Default.CheckCircle
+                                TaskStatusFilter.MISSED -> Icons.Default.Cancel
+                            },
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null,
+                modifier = Modifier.height(44.dp)
+            )
+        }
+    }
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ListState(state: MyDailyTasksUiState, viewModel: MyDailyTasksViewModel) {
+private fun ListState(
+    state: MyDailyTasksUiState,
+    tasks: List<DailyTask>,
+    viewModel: MyDailyTasksViewModel
+) {
     PullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = viewModel::refresh,
@@ -211,7 +346,7 @@ private fun ListState(state: MyDailyTasksUiState, viewModel: MyDailyTasksViewMod
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(state.tasks, key = { it.taskExecutionId }) { task ->
+            items(tasks, key = { it.taskExecutionId }) { task ->
                 DailyTaskCard(
                     task = task,
                     inProgress = state.taskInProgress == task.taskExecutionId,

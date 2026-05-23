@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.akuzyukhin.orientir.core.ui.toUserMessage
 import ru.akuzyukhin.orientir.feature.task.domain.repository.TasksRepository
+import ru.akuzyukhin.orientir.feature.task.ui.daily.TaskStatusFilter
 import ru.akuzyukhin.orientir.navigation.HomeTabRoutes
 import java.time.LocalDate
 import javax.inject.Inject
@@ -77,4 +78,12 @@ class CuratorWardDailyViewModel @Inject constructor(
     fun onPreviousDay() = load(_uiState.value.date.minusDays(1))
     fun onNextDay() = load(_uiState.value.date.plusDays(1))
     fun onGoToToday() = load(LocalDate.now())
+
+    fun onFilterChange(filter: TaskStatusFilter) {
+        _uiState.update { it.copy(statusFilter = filter) }
+    }
+
+    fun onSearchChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
 }

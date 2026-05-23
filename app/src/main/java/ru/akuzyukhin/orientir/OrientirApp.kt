@@ -12,6 +12,5 @@ class OrientirApp : Application() {
     override fun onCreate() {
         super.onCreate()
         NotificationChannels.createAll(this)
-        android.util.Log.d("OrientirApp", "Application created, Hilt initialized")
     }
 }

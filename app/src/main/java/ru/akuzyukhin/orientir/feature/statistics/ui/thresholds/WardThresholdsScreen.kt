@@ -2,6 +2,8 @@ package ru.akuzyukhin.orientir.feature.statistics.ui.thresholds
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,9 +12,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import ru.akuzyukhin.orientir.core.ui.CollectAsEffect
 
@@ -82,62 +86,62 @@ private fun ThresholdsContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = "Индивидуальные пороги нарушений. При выходе показателей " +
                     "за эти границы вы получите уведомление.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        ThresholdSlider(
-            title = "Период анализа",
-            value = state.periodDays,
-            valueRange = 1f..90f,
-            steps = 88,
-            displayValue = "${state.periodDays} дн.",
-            onChange = onPeriodChange
-        )
+        ThresholdCard {
+            PeriodInputRow(
+                value = state.periodDays,
+                valueRange = 1..90,
+                onValueChange = onPeriodChange
+            )
+        }
 
-        ThresholdSlider(
-            title = "Максимальный коэффициент отклонений (T)",
-            value = state.maxGlobalDeviationPercent,
-            valueRange = 0f..100f,
-            steps = 99,
-            displayValue = "${state.maxGlobalDeviationPercent}%",
-            onChange = onGlobalDeviationChange
-        )
+        ThresholdCard {
+            ThresholdSliderRow(
+                title = "Максимальный коэффициент отклонений",
+                value = state.maxGlobalDeviationPercent,
+                valueRange = 0..100,
+                unit = "%",
+                onValueChange = onGlobalDeviationChange
+            )
+        }
 
-        ThresholdSlider(
-            title = "Минимальный процент выполнения",
-            value = state.minCompletionRatePercent,
-            valueRange = 0f..100f,
-            steps = 99,
-            displayValue = "${state.minCompletionRatePercent}%",
-            onChange = onCompletionChange
-        )
+        ThresholdCard {
+            ThresholdSliderRow(
+                title = "Минимальный процент выполнения",
+                value = state.minCompletionRatePercent,
+                valueRange = 0..100,
+                unit = "%",
+                onValueChange = onCompletionChange
+            )
+        }
 
-        ThresholdSlider(
-            title = "Максимальный процент пропусков",
-            value = state.maxOverdueRatePercent,
-            valueRange = 0f..100f,
-            steps = 99,
-            displayValue = "${state.maxOverdueRatePercent}%",
-            onChange = onOverdueChange
-        )
+        ThresholdCard {
+            ThresholdSliderRow(
+                title = "Максимальный процент пропусков",
+                value = state.maxOverdueRatePercent,
+                valueRange = 0..100,
+                unit = "%",
+                onValueChange = onOverdueChange
+            )
+        }
 
-        ThresholdSlider(
-            title = "Максимальное среднее отклонение",
-            value = state.maxAvgDeviationMinutes,
-            valueRange = 0f..120f,
-            steps = 119,
-            displayValue = "${state.maxAvgDeviationMinutes} мин.",
-            onChange = onAvgDeviationChange
-        )
-
-        Spacer(Modifier.height(8.dp))
+        ThresholdCard {
+            ThresholdSliderRow(
+                title = "Максимальное среднее отклонение",
+                value = state.maxAvgDeviationMinutes,
+                valueRange = 0..120,
+                unit = "мин",
+                onValueChange = onAvgDeviationChange
+            )
+        }
 
         Button(
             onClick = onSave,
@@ -159,26 +163,38 @@ private fun ThresholdsContent(
             Text(
                 text = msg,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }
 }
 
 @Composable
-private fun ThresholdSlider(
+private fun ThresholdCard(content: @Composable () -> Unit) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun ThresholdSliderRow(
     title: String,
     value: Int,
-    valueRange: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    displayValue: String,
-    onChange: (Int) -> Unit
+    valueRange: IntRange,
+    unit: String,
+    onValueChange: (Int) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -186,8 +202,9 @@ private fun ThresholdSlider(
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f)
             )
+            Spacer(Modifier.width(12.dp))
             Text(
-                text = displayValue,
+                text = "$value $unit",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -195,9 +212,66 @@ private fun ThresholdSlider(
         }
         Slider(
             value = value.toFloat(),
-            onValueChange = { onChange(it.toInt()) },
-            valueRange = valueRange,
-            steps = steps
+            onValueChange = { onValueChange(it.roundToInt()) },
+            valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+            steps = 0,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
+    }
+}
+
+@Composable
+private fun PeriodInputRow(
+    value: Int,
+    valueRange: IntRange,
+    onValueChange: (Int) -> Unit
+) {
+    var textValue by remember(value) { mutableStateOf(value.toString()) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Период анализа",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(12.dp))
+            OutlinedTextField(
+                value = textValue,
+                onValueChange = { input ->
+                    textValue = input.filter { it.isDigit() }.take(2)
+                    textValue.toIntOrNull()?.let { num ->
+                        if (num in valueRange) onValueChange(num)
+                    }
+                },
+                suffix = { Text("дн") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.width(110.dp)
+            )
+        }
+        Slider(
+            value = value.toFloat(),
+            onValueChange = {
+                val num = it.roundToInt()
+                onValueChange(num)
+                textValue = num.toString()
+            },
+            valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+            steps = 0,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         )
     }
 }

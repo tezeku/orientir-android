@@ -54,14 +54,9 @@ private fun SplashContent() {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Расписание для жизни",
+                text = "Вместе — спокойнее",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(48.dp))
-            CircularProgressIndicator(
-                modifier = Modifier.size(40.dp),
-                strokeWidth = 3.dp
             )
         }
     }

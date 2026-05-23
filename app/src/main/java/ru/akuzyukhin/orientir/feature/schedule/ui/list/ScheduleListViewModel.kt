@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import ru.akuzyukhin.orientir.core.ui.toUserMessage
 import ru.akuzyukhin.orientir.feature.schedule.domain.model.Schedule
 import ru.akuzyukhin.orientir.feature.schedule.domain.repository.SchedulesRepository
+import ru.akuzyukhin.orientir.feature.task.domain.repository.TasksRepository
 import ru.akuzyukhin.orientir.navigation.HomeTabRoutes
 import javax.inject.Inject
 
@@ -24,6 +25,7 @@ private const val REFRESH_MIN_DURATION_MS = 500L
 @HiltViewModel
 class SchedulesListViewModel @Inject constructor(
     private val schedulesRepository: SchedulesRepository,
+    private val tasksRepository: TasksRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -178,6 +180,10 @@ class SchedulesListViewModel @Inject constructor(
         _uiState.update { it.copy(scheduleToDelete = null) }
     }
 
+    fun onSearchChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
     fun onStatisticsClick() {
         viewModelScope.launch { _events.send(SchedulesListUiEvent.NavigateToStatistics(wardId)) }
     }
@@ -190,6 +196,13 @@ class SchedulesListViewModel @Inject constructor(
         val schedule = _uiState.value.scheduleToDelete ?: return
 
         viewModelScope.launch {
+            // Сначала удаляем все задачи расписания, чтобы сервер каскадно удалил
+            // экземпляры их выполнения (task executions), иначе они остаются в статистике.
+            val tasks = tasksRepository.getTasksBySchedule(wardId, schedule.id).getOrElse { emptyList() }
+            tasks.forEach { task ->
+                tasksRepository.deleteTask(wardId, schedule.id, task.id)
+            }
+
             schedulesRepository.deleteScheduleForWard(wardId, schedule.id)
                 .onSuccess {
                     _uiState.update {

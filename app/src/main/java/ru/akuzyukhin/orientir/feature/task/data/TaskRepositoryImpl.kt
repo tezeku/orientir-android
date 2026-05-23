@@ -7,6 +7,7 @@ import ru.akuzyukhin.orientir.feature.task.domain.model.Importance
 import ru.akuzyukhin.orientir.feature.task.domain.model.Task
 import ru.akuzyukhin.orientir.feature.task.domain.model.TaskType
 import ru.akuzyukhin.orientir.feature.task.domain.repository.TasksRepository
+import ru.akuzyukhin.orientir.feature.task.domain.util.RecurrenceRuleParser
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
@@ -78,11 +79,21 @@ class TasksRepositoryImpl @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getDailyTasksForWard(wardId: Long, date: LocalDate): Result<List<DailyTask>> =
-        runCatching { api.getDailyTasksForWard(wardId, date.toString()).map { it.toDomain() } }
+        runCatching {
+            api.getDailyTasksForWard(wardId, date.toString())
+                .map { it.toDomain() }
+                .filter { it.scheduledDateTime.toLocalDate() == date }
+                .filter { RecurrenceRuleParser.isDayValid(it.rrule, date) }
+        }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getMyDailyTasks(date: LocalDate): Result<List<DailyTask>> =
-        runCatching { api.getMyDailyTasks(date.toString()).map { it.toDomain() } }
+        runCatching {
+            api.getMyDailyTasks(date.toString())
+                .map { it.toDomain() }
+                .filter { it.scheduledDateTime.toLocalDate() == date }
+                .filter { RecurrenceRuleParser.isDayValid(it.rrule, date) }
+        }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getMyTask(scheduleId: Long, taskId: Long): Result<Task> =

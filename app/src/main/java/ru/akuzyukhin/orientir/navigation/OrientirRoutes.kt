@@ -32,9 +32,17 @@ object HomeTabRoutes {
 
     const val ADD_WARD = "profile_add_ward"
 
-    const val WARD_SCHEDULES = "profile_ward_schedules"
+    const val NOTIFICATION_SETTINGS = "profile_notification_settings"
 
+    const val ACCESSIBILITY_SETTINGS = "profile_accessibility_settings"
+
+    const val WARD_DETAIL = "ward_detail"
     const val WARD_ID_ARG = "wardId"
+
+    const val WARD_DETAIL_ROUTE = "$WARD_DETAIL/{$WARD_ID_ARG}"
+    fun wardDetail(wardId: Long) = "$WARD_DETAIL/$wardId"
+
+    const val WARD_SCHEDULES = "profile_ward_schedules"
 
     const val WARD_SCHEDULES_ROUTE = "$WARD_SCHEDULES/{$WARD_ID_ARG}"
 
@@ -71,7 +79,10 @@ object HomeTabRoutes {
         PROFILE_EDIT,
         CHANGE_PASSWORD,
         CONNECTIONS,
-        ADD_WARD
+        ADD_WARD,
+        NOTIFICATION_SETTINGS,
+        ACCESSIBILITY_SETTINGS,
+        WARD_DETAIL_ROUTE
     )
 
     val SCHEDULE_TAB_ROUTES: Set<String> = setOf(

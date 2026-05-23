@@ -27,7 +27,6 @@ class ReminderRepositoryImpl @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun schedule(reminder: ReminderInfo) {
         if (reminder.scheduledAt.isBefore(Instant.now())) return
-        if (!canScheduleExact()) return
 
         scheduleAlarm(reminder)
         storage.put(reminder)
@@ -57,21 +56,15 @@ class ReminderRepositoryImpl @Inject constructor(
             android.util.Log.w(TAG, "scheduleAlarm: skip past time ${reminder.scheduledAt}")
             return
         }
-        if (!canScheduleExact()) {
-            android.util.Log.w(TAG, "scheduleAlarm: SCHEDULE_EXACT_ALARM not granted")
-            return
-        }
 
         val pendingIntent = buildPendingIntent(reminder)
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            reminder.scheduledAt.toEpochMilli(),
-            pendingIntent
-        )
-        android.util.Log.d(
-            TAG,
-            "scheduleAlarm: scheduled id=${reminder.taskExecutionId} at=${reminder.scheduledAt}"
-        )
+        val triggerMs = reminder.scheduledAt.toEpochMilli()
+
+        if (canScheduleExact()) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMs, pendingIntent)
+        } else {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMs, pendingIntent)
+        }
     }
 
     private fun cancelAlarm(taskExecutionId: Long) {

@@ -27,6 +27,7 @@ import ru.akuzyukhin.orientir.feature.task.domain.model.ExecutionStatus
 import java.time.ZoneId
 
 private const val REFRESH_MIN_DURATION_MS = 500L
+private const val AUTO_REFRESH_INTERVAL_MS = 60_000L
 
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
@@ -45,6 +46,19 @@ class MyDailyTasksViewModel @Inject constructor(
 
     init {
         load(LocalDate.now())
+        startPeriodicRefresh()
+    }
+
+    private fun startPeriodicRefresh() {
+        viewModelScope.launch {
+            while (true) {
+                delay(AUTO_REFRESH_INTERVAL_MS)
+                val s = _uiState.value
+                if (!s.isLoading && !s.isRefreshing && s.date == LocalDate.now()) {
+                    refresh()
+                }
+            }
+        }
     }
 
     private fun load(date: LocalDate) {
@@ -88,6 +102,14 @@ class MyDailyTasksViewModel @Inject constructor(
     fun onPreviousDay() = load(_uiState.value.date.minusDays(1))
     fun onNextDay() = load(_uiState.value.date.plusDays(1))
     fun onGoToToday() = load(LocalDate.now())
+
+    fun onFilterChange(filter: TaskStatusFilter) {
+        _uiState.update { it.copy(statusFilter = filter) }
+    }
+
+    fun onSearchChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
 
     fun onTaskClick(task: DailyTask) {
         _uiState.update { it.copy(selectedTask = task) }

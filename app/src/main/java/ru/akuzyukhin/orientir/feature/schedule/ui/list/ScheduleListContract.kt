@@ -19,7 +19,8 @@ data class SchedulesListUiState(
     val schedules: List<Schedule> = emptyList(),
     val errorMessage: String? = null,
     val dialog: ScheduleDialogState = ScheduleDialogState(),
-    val scheduleToDelete: Schedule? = null
+    val scheduleToDelete: Schedule? = null,
+    val searchQuery: String = ""
 )
 
 sealed interface SchedulesListUiEvent : UiEvent {

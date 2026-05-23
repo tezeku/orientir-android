@@ -75,7 +75,8 @@ class TaskEditorViewModel @Inject constructor(
                             intervalDays = (pattern as? RecurrencePattern.EveryNDays)?.interval
                                 ?: it.intervalDays,
                             onceDate = (pattern as? RecurrencePattern.Once)?.date ?: it.onceDate,
-                            customRrule = (pattern as? RecurrencePattern.Custom)?.rrule
+                            customRrule = (pattern as? RecurrencePattern.Custom)?.rrule,
+                            rruleStartDate = RecurrenceRuleParser.parseDtstart(task.rrule)
                         )
                     }
                 }
@@ -172,7 +173,8 @@ class TaskEditorViewModel @Inject constructor(
             }
             PatternKind.ONCE -> RecurrencePattern.Once(state.onceDate)
         }
-        val rrule = RecurrenceRuleParser.build(pattern, state.scheduledTime)
+        val startDate = if (state.isEditMode) state.rruleStartDate else LocalDate.now()
+        val rrule = RecurrenceRuleParser.build(pattern, state.scheduledTime, startDate = startDate)
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }

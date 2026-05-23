@@ -26,8 +26,6 @@ class TaskReminderReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.O)
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onReceive(context: Context, intent: Intent) {
-        Log.d(TAG, "onReceive: alarm fired")
-
         val executionId = intent.getLongExtra(EXTRA_TASK_EXECUTION_ID, INVALID_ID)
         if (executionId == INVALID_ID) {
             Log.w(TAG, "onReceive: missing task_execution_id, skip")
@@ -72,7 +70,6 @@ class TaskReminderReceiver : BroadcastReceiver() {
             )
             .build()
 
-        Log.d(TAG, "onReceive: showing notification id=$executionId")
         NotificationManagerCompat.from(context).notify(executionId.toInt(), notification)
     }
 

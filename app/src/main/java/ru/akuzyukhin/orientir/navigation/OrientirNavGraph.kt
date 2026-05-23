@@ -1,5 +1,7 @@
 package ru.akuzyukhin.orientir.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -13,6 +15,7 @@ import ru.akuzyukhin.orientir.feature.auth.ui.splash.SplashScreen
 import ru.akuzyukhin.orientir.feature.home.ui.HomeScreen
 
 /** Корневой граф навигации приложения */
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun OrientirNavGraph(
     navController: NavHostController = rememberNavController()
@@ -69,7 +72,6 @@ fun OrientirNavGraph(
                 },
                 onNavigateToLogin = { phone ->
                     val route = OrientirRoutes.loginWithPhone(phone)
-                    android.util.Log.d("NavGraph", "register→login: phone='$phone', route='$route'")
                     navController.navigate(route) {
                         popUpTo(OrientirRoutes.LOGIN_ROUTE) { inclusive = true }
                         launchSingleTop = true

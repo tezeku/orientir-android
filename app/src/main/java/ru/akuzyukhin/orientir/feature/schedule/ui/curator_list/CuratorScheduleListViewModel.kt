@@ -27,6 +27,8 @@ class CuratorScheduleListViewModel @Inject constructor(
 
     init { load() }
 
+    fun refresh() = load()
+
     fun onWardClick(wardId: Long) {
         viewModelScope.launch {
             _events.send(CuratorScheduleListUiEvent.NavigateToWardSchedules(wardId))

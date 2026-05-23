@@ -2,6 +2,7 @@ package ru.akuzyukhin.orientir.feature.statistics.ui.statistics
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -90,6 +91,7 @@ private fun StatisticsContent(deviation: GlobalDeviation) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         GlobalCoefficientCard(deviation)
+        DeviationVisualization(deviation)
         TrendCard(deviation)
         InfoCard(deviation)
     }
@@ -107,7 +109,8 @@ private fun GlobalCoefficientCard(deviation: GlobalDeviation) {
         else MaterialTheme.colorScheme.primaryContainer
 
     ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor)
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
@@ -172,7 +175,12 @@ private fun TrendCard(deviation: GlobalDeviation) {
     }
     val deltaPercent = ((deviation.current - deviation.previous) * 100).toInt()
 
-    ElevatedCard {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -210,7 +218,12 @@ private fun InfoCard(deviation: GlobalDeviation) {
         deviation.periodFrom, deviation.periodTo
     ) + 1
 
-    ElevatedCard {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = "Анализ",
@@ -218,9 +231,9 @@ private fun InfoCard(deviation: GlobalDeviation) {
             )
             Spacer(Modifier.height(12.dp))
             InfoRow("Период анализа", "$periodDays дн.")
-            InfoRow("Текущее значение G", "${(deviation.current * 100).toInt()}%")
-            InfoRow("Предыдущее значение G", "${(deviation.previous * 100).toInt()}%")
-            InfoRow("Установленный порог T", "${(deviation.threshold * 100).toInt()}%")
+            InfoRow("Текущее значение", "${(deviation.current * 100).toInt()}%")
+            InfoRow("Предыдущее значение", "${(deviation.previous * 100).toInt()}%")
+            InfoRow("Установленный порог", "${(deviation.threshold * 100).toInt()}%")
         }
     }
 }
@@ -233,5 +246,148 @@ private fun InfoRow(label: String, value: String) {
     ) {
         Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun DeviationVisualization(deviation: GlobalDeviation) {
+    val currentPercent = (deviation.current * 100).toInt()
+    val previousPercent = (deviation.previous * 100).toInt()
+    val thresholdPercent = (deviation.threshold * 100).toInt()
+
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "Шкала отклонений",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(Modifier.height(20.dp))
+
+            val safeColor = Color(0xFF66BB6A)
+            val dangerColor = MaterialTheme.colorScheme.error
+            val currentColor =
+                if (deviation.isExceeded) dangerColor else MaterialTheme.colorScheme.primary
+            val previousColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+            ) {
+                val width = size.width
+                val barHeight = 14f
+                val barTop = (size.height - barHeight) / 2f
+                val thresholdX = width * (thresholdPercent / 100f)
+                val currentX = width * (currentPercent / 100f).coerceIn(0f, 1f)
+                val previousX = width * (previousPercent / 100f).coerceIn(0f, 1f)
+
+                drawRoundRect(
+                    color = safeColor.copy(alpha = 0.5f),
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, barTop),
+                    size = androidx.compose.ui.geometry.Size(thresholdX, barHeight),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(7f, 7f)
+                )
+                drawRoundRect(
+                    color = dangerColor.copy(alpha = 0.5f),
+                    topLeft = androidx.compose.ui.geometry.Offset(thresholdX, barTop),
+                    size = androidx.compose.ui.geometry.Size(width - thresholdX, barHeight),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(7f, 7f)
+                )
+                val dashPath = androidx.compose.ui.graphics.PathEffect
+                    .dashPathEffect(floatArrayOf(6f, 4f), 0f)
+                drawLine(
+                    color = previousColor,
+                    start = androidx.compose.ui.geometry.Offset(previousX, barTop - 6f),
+                    end = androidx.compose.ui.geometry.Offset(previousX, barTop + barHeight + 6f),
+                    strokeWidth = 3f,
+                    pathEffect = dashPath
+                )
+                drawLine(
+                    color = currentColor,
+                    start = androidx.compose.ui.geometry.Offset(currentX, barTop - 8f),
+                    end = androidx.compose.ui.geometry.Offset(currentX, barTop + barHeight + 8f),
+                    strokeWidth = 5f
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "0%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Порог $thresholdPercent%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "100%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                LegendItem(
+                    label = "Сейчас: $currentPercent%",
+                    isDashed = false,
+                    color = currentColor
+                )
+                LegendItem(
+                    label = "Ранее: $previousPercent%",
+                    isDashed = true,
+                    color = previousColor
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, isDashed: Boolean, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Canvas(modifier = Modifier.size(16.dp, 4.dp)) {
+            if (isDashed) {
+                val dashPath = androidx.compose.ui.graphics.PathEffect
+                    .dashPathEffect(floatArrayOf(3f, 2f), 0f)
+                drawLine(
+                    color = color,
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2),
+                    strokeWidth = 4f,
+                    pathEffect = dashPath
+                )
+            } else {
+                drawLine(
+                    color = color,
+                    start = androidx.compose.ui.geometry.Offset(0f, size.height / 2),
+                    end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2),
+                    strokeWidth = 4f
+                )
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

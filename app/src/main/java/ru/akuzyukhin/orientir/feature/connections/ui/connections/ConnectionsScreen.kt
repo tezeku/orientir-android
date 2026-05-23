@@ -59,7 +59,7 @@ import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
 fun ConnectionsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddWard: () -> Unit,
-    onNavigateToWardSchedules: (Long) -> Unit,
+    onNavigateToWardDetail: (Long) -> Unit,
     viewModel: ConnectionsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -76,7 +76,7 @@ fun ConnectionsScreen(
     CollectAsEffect(viewModel.events) { event ->
         when (event) {
             ConnectionsUiEvent.NavigateToAddWard -> onNavigateToAddWard()
-            is ConnectionsUiEvent.NavigateToWardDetails -> onNavigateToWardSchedules(event.wardId)
+            is ConnectionsUiEvent.NavigateToWardDetails -> onNavigateToWardDetail(event.wardId)
         }
     }
 

@@ -26,6 +26,7 @@ data class TaskEditorUiState constructor(
     val intervalDays: Int = 2,
     val onceDate: LocalDate = LocalDate.now(),
     val customRrule: String? = null,
+    val rruleStartDate: LocalDate? = null,
 
     val nameError: String? = null,
     val windowError: String? = null,

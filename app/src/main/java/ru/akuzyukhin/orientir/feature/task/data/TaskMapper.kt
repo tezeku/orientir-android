@@ -38,7 +38,8 @@ internal fun DailyTaskDto.toDomain() = DailyTask(
     status = status,
     executionTime = executionTime?.let { LocalDateTime.parse(it) },
     deviationMinutes = deviationMinutes,
-    isWithinWindow = isWithinWindow
+    isWithinWindow = isWithinWindow,
+    rrule = task.rrule
 )
 
 /** LocalTime в "HH:mm:ss" для отправки на сервер */

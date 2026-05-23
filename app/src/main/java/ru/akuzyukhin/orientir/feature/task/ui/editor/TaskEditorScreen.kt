@@ -122,6 +122,8 @@ private fun TaskEditorContent(
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var windowText by remember(state.windowMinutes) { mutableStateOf(state.windowMinutes.toString()) }
+    var intervalText by remember(state.intervalDays) { mutableStateOf(state.intervalDays.toString()) }
 
     Scaffold(
         topBar = {
@@ -185,8 +187,11 @@ private fun TaskEditorContent(
             }
 
             OutlinedTextField(
-                value = state.windowMinutes.toString(),
-                onValueChange = onWindowChange,
+                value = windowText,
+                onValueChange = { input ->
+                    windowText = input.filter { it.isDigit() }
+                    onWindowChange(windowText)
+                },
                 label = { Text("Окно выполнения (минут)") },
                 supportingText = state.windowError?.let { { Text(it) } }
                     ?: { Text("На сколько минут можно опоздать или выполнить раньше") },
@@ -210,8 +215,11 @@ private fun TaskEditorContent(
                     }
                     PatternKind.EVERY_N_DAYS -> {
                         OutlinedTextField(
-                            value = state.intervalDays.toString(),
-                            onValueChange = onIntervalChange,
+                            value = intervalText,
+                            onValueChange = { input ->
+                                intervalText = input.filter { it.isDigit() }
+                                onIntervalChange(intervalText)
+                            },
                             label = { Text("Каждые N дней") },
                             supportingText = state.intervalError?.let { { Text(it) } },
                             isError = state.intervalError != null,

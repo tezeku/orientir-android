@@ -31,8 +31,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
             return
         }
 
-        android.util.Log.d(TAG, "onReceive: action=$action, executionId=$executionId")
-
         when (action) {
             ACTION_COMPLETE -> handleComplete(context, executionId)
             else -> android.util.Log.w(TAG, "onReceive: unknown action $action")
@@ -47,7 +45,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
             try {
                 monitoringRepository.complete(executionId)
                     .onSuccess {
-                        android.util.Log.d(TAG, "handleComplete: success id=$executionId")
                         reminderRepository.cancel(executionId)
                         NotificationManagerCompat.from(context).cancel(executionId.toInt())
                     }

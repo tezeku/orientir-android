@@ -3,6 +3,7 @@ package ru.akuzyukhin.orientir.feature.profile.ui.profile
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,14 +19,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,18 +39,24 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -52,11 +64,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import ru.akuzyukhin.orientir.BuildConfig
+import ru.akuzyukhin.orientir.core.accessibility.domain.model.AccessibilityProfile
+import ru.akuzyukhin.orientir.core.accessibility.ui.AccessibilityViewModel
 import ru.akuzyukhin.orientir.core.ui.CollectAsEffect
 import ru.akuzyukhin.orientir.feature.auth.domain.model.Role
 import ru.akuzyukhin.orientir.feature.profile.domain.model.Profile
-import ru.akuzyukhin.orientir.feature.reminder.ui.debug.DebugReminderSection
 import ru.akuzyukhin.orientir.ui.theme.OrientirTheme
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -66,9 +78,14 @@ fun ProfileScreen(
     onNavigateToChangePassword: () -> Unit,
     onNavigateToConnections: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToNotificationSettings: () -> Unit,
+    onNavigateToAccessibilitySettings: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val accessibilityVm: AccessibilityViewModel = hiltViewModel()
+    val accessibilityProfile by accessibilityVm.profile.collectAsStateWithLifecycle()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner.lifecycle) {
@@ -96,7 +113,10 @@ fun ProfileScreen(
         onConnectionsClick = viewModel::onConnectionsClick,
         onLogoutClick = viewModel::onLogoutClick,
         onRetry = viewModel::retry,
-        onRefresh = viewModel::refresh
+        onRefresh = viewModel::refresh,
+        onNotificationsClick = onNavigateToNotificationSettings,
+        onAccessibilityClick = onNavigateToAccessibilitySettings,
+        accessibilityDisplayName = accessibilityProfile.displayName
     )
 }
 
@@ -110,7 +130,10 @@ private fun ProfileContent(
     onConnectionsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onRetry: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onNotificationsClick: () -> Unit,
+    onAccessibilityClick: () -> Unit = {},
+    accessibilityDisplayName: String = AccessibilityProfile.STANDARD.displayName
 ) {
     Scaffold(
         topBar = {
@@ -171,7 +194,10 @@ private fun ProfileContent(
                         isLoggingOut = state.isLoggingOut,
                         onChangePasswordClick = onChangePasswordClick,
                         onConnectionsClick = onConnectionsClick,
-                        onLogoutClick = onLogoutClick
+                        onLogoutClick = onLogoutClick,
+                        onNotificationsClick = onNotificationsClick,
+                        onAccessibilityClick = onAccessibilityClick,
+                        accessibilityDisplayName = accessibilityDisplayName
                     )
                 }
             }
@@ -227,113 +253,161 @@ private fun LoadedState(
     isLoggingOut: Boolean,
     onChangePasswordClick: () -> Unit,
     onConnectionsClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onNotificationsClick: () -> Unit,
+    onAccessibilityClick: () -> Unit,
+    accessibilityDisplayName: String
 ) {
+    var showAboutDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
     ) {
-        ProfileHeader(profile = profile)
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Spacer(Modifier.height(16.dp))
+            ProfileHeader(profile = profile)
+            Spacer(Modifier.height(20.dp))
 
-        Spacer(Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onChangePasswordClick,
+                    enabled = !isLoggingOut,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Lock, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Пароль")
+                }
+                OutlinedButton(
+                    onClick = onLogoutClick,
+                    enabled = !isLoggingOut,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    if (isLoggingOut) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Icon(Icons.AutoMirrored.Filled.Logout, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Выйти")
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+        }
+
         HorizontalDivider()
-        Spacer(Modifier.height(24.dp))
 
-        InfoRow(
-            icon = Icons.Default.Phone,
-            label = "Телефон",
-            value = profile.phoneNumber
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Spacer(Modifier.height(20.dp))
+
+            InfoRow(icon = Icons.Default.Phone, label = "Телефон", value = profile.phoneNumber)
+
+            if (profile.role == Role.CURATOR && !profile.email.isNullOrBlank()) {
+                Spacer(Modifier.height(16.dp))
+                InfoRow(icon = Icons.Default.Email, label = "Email", value = profile.email!!)
+            }
+
+            if (profile.role == Role.WARD && !profile.address.isNullOrBlank()) {
+                Spacer(Modifier.height(16.dp))
+                InfoRow(icon = Icons.Default.Home, label = "Адрес", value = profile.address!!)
+            }
+
+            Spacer(Modifier.height(20.dp))
+        }
+
+        HorizontalDivider()
+
+        ListItem(
+            headlineContent = {
+                Text(
+                    when (profile.role) {
+                        Role.CURATOR -> "Мои подопечные"
+                        Role.WARD -> "Мои кураторы"
+                    }
+                )
+            },
+            leadingContent = { Icon(Icons.Default.People, contentDescription = null) },
+            trailingContent = {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            },
+            modifier = Modifier.clickable(enabled = !isLoggingOut, onClick = onConnectionsClick)
         )
 
-        if (profile.role == Role.CURATOR && !profile.email.isNullOrBlank()) {
-            Spacer(Modifier.height(16.dp))
-            InfoRow(
-                icon = Icons.Default.Email,
-                label = "Email",
-                value = profile.email
-            )
-        }
+        HorizontalDivider()
 
-        if (profile.role == Role.WARD && !profile.address.isNullOrBlank()) {
-            Spacer(Modifier.height(16.dp))
-            InfoRow(
-                icon = Icons.Default.Home,
-                label = "Адрес",
-                value = profile.address
-            )
-        }
+        ListItem(
+            headlineContent = { Text("Размер интерфейса") },
+            leadingContent = { Icon(Icons.Default.TextFields, contentDescription = null) },
+            supportingContent = { Text(accessibilityDisplayName) },
+            trailingContent = {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            },
+            modifier = Modifier.clickable(onClick = onAccessibilityClick)
+        )
 
-        Spacer(Modifier.height(32.dp))
+        HorizontalDivider()
 
-        OutlinedButton(
-            onClick = onConnectionsClick,
-            enabled = !isLoggingOut,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Default.People,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = when (profile.role) {
-                    Role.CURATOR -> "Мои подопечные"
-                    Role.WARD -> "Мои кураторы"
-                }
-            )
-        }
+        ListItem(
+            headlineContent = { Text("Уведомления") },
+            leadingContent = { Icon(Icons.Default.Notifications, contentDescription = null) },
+            trailingContent = {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            },
+            modifier = Modifier.clickable(onClick = onNotificationsClick)
+        )
 
-        Spacer(Modifier.height(12.dp))
+        ListItem(
+            headlineContent = { Text("О приложении") },
+            leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
+            trailingContent = {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            },
+            modifier = Modifier.clickable { showAboutDialog = true }
+        )
 
-        OutlinedButton(
-            onClick = onChangePasswordClick,
-            enabled = !isLoggingOut,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text("Сменить пароль")
-        }
+        HorizontalDivider()
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(24.dp))
 
-        OutlinedButton(
-            onClick = onLogoutClick,
-            enabled = !isLoggingOut,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            )
-        ) {
-            if (isLoggingOut) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.error
+        Text(
+            text = "Версия 1.0.0",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(24.dp))
+    }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = { Text("Ориентир") },
+            text = {
+                Text(
+                    "Приложение для мониторинга расписания людей с особыми потребностями. " +
+                            "\n\nКураторы составляют расписания задач, подопечные выполняют их и отмечают результат. " +
+                            "\nСистема отслеживает отклонения и уведомляет куратора о критических ситуациях."
                 )
-            } else {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Выйти")
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) { Text("OK") }
             }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        if (BuildConfig.DEBUG) {
-            DebugReminderSection()
-        }
+        )
     }
 }
 
@@ -440,7 +514,7 @@ private fun ProfileContentLoadedPreview() {
             ),
             onEditClick = {}, onChangePasswordClick = {},
             onConnectionsClick = {},
-            onLogoutClick = {}, onRetry = {}, onRefresh = {}
+            onLogoutClick = {}, onRetry = {}, onRefresh = {}, onNotificationsClick = {}, onAccessibilityClick = {}
         )
     }
 }
@@ -454,7 +528,7 @@ private fun ProfileContentLoadingPreview() {
             state = ProfileUiState(isLoading = true),
             onEditClick = {}, onChangePasswordClick = {},
             onConnectionsClick = {},
-            onLogoutClick = {}, onRetry = {}, onRefresh = {}
+            onLogoutClick = {}, onRetry = {}, onRefresh = {}, onNotificationsClick = {}, onAccessibilityClick = {}
         )
     }
 }
@@ -471,7 +545,7 @@ private fun ProfileContentErrorPreview() {
             ),
             onEditClick = {}, onChangePasswordClick = {},
             onConnectionsClick = {},
-            onLogoutClick = {}, onRetry = {}, onRefresh = {}
+            onLogoutClick = {}, onRetry = {}, onRefresh = {}, onNotificationsClick = {}, onAccessibilityClick = {}
         )
     }
 }
@@ -498,7 +572,7 @@ private fun ProfileContentWardPreview() {
             ),
             onEditClick = {}, onChangePasswordClick = {},
             onConnectionsClick = {},
-            onLogoutClick = {}, onRetry = {}, onRefresh = {}
+            onLogoutClick = {}, onRetry = {}, onRefresh = {}, onNotificationsClick = {}, onAccessibilityClick = {}
         )
     }
 }

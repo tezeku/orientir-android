@@ -56,7 +56,8 @@ data class DailyTaskInfoDto(
     val type: TaskType,
     val importance: Importance,
     @SerialName("window_minutes")
-    val windowMinutes: Int
+    val windowMinutes: Int,
+    val rrule: String = ""
 )
 
 /** DTO daily-задачи */
