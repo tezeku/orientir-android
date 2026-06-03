@@ -326,7 +326,7 @@ private fun RegisterContent(
                     enabled = state.isSubmitEnabled,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp)
+                        .height(64.dp)
                 ) {
                     if (state.isLoading) {
                         CircularProgressIndicator(

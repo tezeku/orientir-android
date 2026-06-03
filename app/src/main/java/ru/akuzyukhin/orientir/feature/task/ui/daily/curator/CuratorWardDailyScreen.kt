@@ -27,11 +27,14 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SportsGymnastics
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -65,6 +68,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.akuzyukhin.orientir.feature.task.domain.model.DailyTask
 import ru.akuzyukhin.orientir.feature.task.domain.model.ExecutionStatus
+import ru.akuzyukhin.orientir.feature.task.domain.model.TaskType
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale.forLanguageTag
@@ -334,7 +338,7 @@ private fun DailyTaskReadOnlyCard(task: DailyTask) {
         colors = CardDefaults.cardColors(containerColor = statusBg(task.status))
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            StatusIcon(task.status)
+            StatusIcon(task.status, task.taskType)
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -362,9 +366,9 @@ private fun DailyTaskReadOnlyCard(task: DailyTask) {
 }
 
 @Composable
-private fun StatusIcon(status: ExecutionStatus) {
+private fun StatusIcon(status: ExecutionStatus, taskType: TaskType) {
     val (icon, tint) = when (status) {
-        ExecutionStatus.PENDING -> Icons.Default.Done to MaterialTheme.colorScheme.primary
+        ExecutionStatus.PENDING -> taskTypeIcon(taskType) to MaterialTheme.colorScheme.primary
         ExecutionStatus.COMPLETED -> Icons.Default.CheckCircle to Color(0xFF2E7D32)
         ExecutionStatus.COMPLETED_LATE -> Icons.Default.CheckCircle to Color(0xFFE65100)
         ExecutionStatus.SKIPPED -> Icons.Default.SkipNext to MaterialTheme.colorScheme.onSurfaceVariant
@@ -372,6 +376,13 @@ private fun StatusIcon(status: ExecutionStatus) {
         ExecutionStatus.BLOCKED -> Icons.Default.Block to Color(0xFFC62828)
     }
     Icon(icon, null, tint = tint, modifier = Modifier.size(32.dp))
+}
+
+private fun taskTypeIcon(type: TaskType) = when (type) {
+    TaskType.MEDICATION -> Icons.Default.MedicalServices
+    TaskType.PHYSICAL -> Icons.Default.SportsGymnastics
+    TaskType.SOCIAL -> Icons.Default.People
+    TaskType.OTHER -> Icons.Default.MoreHoriz
 }
 
 private fun statusBg(status: ExecutionStatus): Color = when (status) {
